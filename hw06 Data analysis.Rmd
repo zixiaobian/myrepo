@@ -1,28 +1,28 @@
 ---
-title: "How Education and Income Impact COVID-19 Cases Across States in the US"
-date: May 11th, 2021
+title: "The Influence of Education and Income on COVID-19 Cases Across States in USA"
+date: Feb 23rd, 2022
+author: "Zixiao Bian"
 output: 
-  html_document:
-    theme: readable
-    highlight: tango
-    toc: yes
-    toc_depth: 3
-    toc_float:
-      collapsed: no
-      smooth_scroll: yes
+  github_document:
+    toc: TRUE
 ---
-**PSYC 496 Final Project**
+**MACS 30500 Homework 6**
 
-**Zixiao Bian, Tianyi(Roxy) Wang**
+**Zixiao Bian**
 
-### 1. Hypothesis and Motivation
+### 1. Introduction, Hypothesis, and Motivation
 
-More than a year has passed since the global pandemic COVID-19 was first detected in the United States. Looking back at March 2020, individuals must abide by strict quarantine rules to work at home, and indoor activities were suspended. As the increase in new domestic cases slowed down, these restrictions were relaxed. We believe that the lockdown, large-scale COVID-19 testing, and vaccines will eventually lead to a gradual decrease in new cases. However, we are more interested in identifying factors related to confirmed cases of COVID-19 in various US states. In other words, what keeps each state in trouble? Why do some states end up suffering more difficulties than others?
-Our hypothesis is that household income and higher education (bachelor's degree or higher) in each state are negatively correlated with confirmed COVID-19 cases. This hypothesis is based on the inference that the more educated people believe in science, the more they will accept the existence of COVID-19, and they are more willing to comply with strict quarantine regulations actively.
+More than **two years** has passed since the global pandemic COVID-19 was first detected in the United States. Looking back at March 2020, individuals must obey the strict quarantine rules to work/ study at home, and indoor activities were suspended. As the increase in new domestic cases slowed down, these restrictions were relaxed. We believe that the **lockdown**, **large-scale COVID-19 testing**, and **vaccines** will eventually lead to a gradual decrease in new cases. However, we are more interested in identifying factors related to confirmed cases of COVID-19 in various US states. In other words, what is the reason of each states' struggle? Why do some states end up suffering more difficulties than others? For example, New York state had super serious epidemic than, say, Alaska.  
+The hypothesis is that **household income** and **higher education** (bachelor's degree or higher) in each state are negatively correlated with confirmed COVID-19 cases.   
+This hypothesis is based on the inference that the more educated people believe in science, the more they will accept the existence of COVID-19, and they are more **willing** to comply with strict quarantine regulations actively.
 
 ### 2.1 Packages and Data Import
 
-We had four files to be imported. “Household_median_income_2017.csv” measures the median amount of income for households in each state and D.C. of the US. “State-Historical COVID-19.csv” collects the cumulative positive cases of COVID-19 from the first detected to March 7th, 2021. “Education-level by states 2019.csv” indicates the number of people who obtain a certain educational level by the state in 2019. Finally, “state-code.csv” contains all 51 states (including D.C.), the abbreviations, and the corresponding codes.
+We had **four files** to be imported. 
+“Household_median_income_2017.csv” measures the median amount of income for households in each state and D.C. of the US.   
+“State-Historical COVID-19.csv” collects the cumulative positive cases of COVID-19 from the first detected to March 7th, 2021.   
+“Education-level by states 2019.csv” indicates the number of people who obtain a certain educational level by the state in 2019.   
+Finally, “state-code.csv” contains all 51 states (including D.C.), the abbreviations, and the corresponding codes.  
 
 ```{r, message = FALSE}
 
@@ -33,16 +33,16 @@ library(ggplot2)
 library(purrr)
 library(modelr)
 library(broom)
-income <- read.csv("household_median_income_2017.csv")
-coronavirus <- read.csv("State-Historical COVID-19.csv")
-education <- read.csv("Education-level by states 2019.csv")
-state_abb <- read.csv("state-code.csv")
+income <- read.csv("Data/household_median_income_2017.csv")
+coronavirus <- read.csv("Data/State-Historical COVID-19.csv")
+education <- read.csv("Data/Education-level by states 2019.csv")
+state_abb <- read.csv("Data/state-code.csv")
 state_abb = state_abb[state_abb$State != "District of Columbia", ]
 ```
 
 ### 2.2 Data Tidy and Transform
 
-In this chunk, we cleaned the data to maintain the useful part of the four datasets. The original datasets contain a large amount of information that is redundant for this project. Since all datasets contain names of different states, we first extract and rename those columns to simplify the following analysis. Next, we managed to count the total population and the number of people with bachelor’s degrees or higher in a particular state. We then created a data frame that contains a positive COVID-19 rate, the average income from 2014 to 2017, bachelor’s degree or higher rate, and names of states for further analysis.
+In this chunk, we cleaned the data to maintain the useful part of the four data sets. The original data sets contain a large amount of information that is redundant for this project. Since all data sets contain names of different states, we first extract and rename those columns to simplify the following analysis. Next, we managed to count the total population and the number of people with bachelor’s degrees or higher in a particular state. We then created a data frame that contains a positive COVID-19 rate, the average income from 2014 to 2017, bachelor’s degree or higher rate, and names of states for further analysis.
 
 ```{r, message = FALSE, warning = FALSE}
 # data cleaning
@@ -77,10 +77,10 @@ df <- left_join(edu, covid, by = "State") %>%
 
 ### 2.3 Scatter Plots
 
-We were able to draw graphs based on the data frame created above. The first one represents a scatterplot of bachelor’s or higher degree rate and positive COVID-19 cases percentage, and the second one shows the average income and positive COVID-19 cases percentage. We may observe from the scatter plot that there are decreasing trends of COVID-19 cases percentage as either high education rate or average income increases. However, we need further proof.
+We were able to draw graphs based on the data frame created above. The first one represents a scatter plot of bachelor’s or higher degree rate and positive COVID-19 cases percentage, and the second one shows the average income and positive COVID-19 cases percentage. We may observe from the scatter plot that there are decreasing trends of COVID-19 cases percentage as either high education rate or average income increases. However, we need further proof.
 
-```{r}
-# scatterplot
+```{Scatter plots}
+# scatter plot
 
 cor_edu_covid <- ggplot(df, aes(bachlor_rate, posi_percent)) + 
   geom_point(aes(colour = bachlor_rate)) + 
