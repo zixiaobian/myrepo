@@ -1,0 +1,159 @@
+---
+title: "How Education and Income Impact COVID-19 Cases Across States in the US"
+date: May 11th, 2021
+output: 
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+---
+**PSYC 496 Final Project**
+
+**Zixiao Bian, Tianyi(Roxy) Wang**
+
+### 1. Hypothesis and Motivation
+
+More than a year has passed since the global pandemic COVID-19 was first detected in the United States. Looking back at March 2020, individuals must abide by strict quarantine rules to work at home, and indoor activities were suspended. As the increase in new domestic cases slowed down, these restrictions were relaxed. We believe that the lockdown, large-scale COVID-19 testing, and vaccines will eventually lead to a gradual decrease in new cases. However, we are more interested in identifying factors related to confirmed cases of COVID-19 in various US states. In other words, what keeps each state in trouble? Why do some states end up suffering more difficulties than others?
+Our hypothesis is that household income and higher education (bachelor's degree or higher) in each state are negatively correlated with confirmed COVID-19 cases. This hypothesis is based on the inference that the more educated people believe in science, the more they will accept the existence of COVID-19, and they are more willing to comply with strict quarantine regulations actively.
+
+### 2.1 Packages and Data Import
+
+We had four files to be imported. “Household_median_income_2017.csv” measures the median amount of income for households in each state and D.C. of the US. “State-Historical COVID-19.csv” collects the cumulative positive cases of COVID-19 from the first detected to March 7th, 2021. “Education-level by states 2019.csv” indicates the number of people who obtain a certain educational level by the state in 2019. Finally, “state-code.csv” contains all 51 states (including D.C.), the abbreviations, and the corresponding codes.
+
+```{r, message = FALSE}
+
+library(tidyr)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(purrr)
+library(modelr)
+library(broom)
+income <- read.csv("household_median_income_2017.csv")
+coronavirus <- read.csv("State-Historical COVID-19.csv")
+education <- read.csv("Education-level by states 2019.csv")
+state_abb <- read.csv("state-code.csv")
+state_abb = state_abb[state_abb$State != "District of Columbia", ]
+```
+
+### 2.2 Data Tidy and Transform
+
+In this chunk, we cleaned the data to maintain the useful part of the four datasets. The original datasets contain a large amount of information that is redundant for this project. Since all datasets contain names of different states, we first extract and rename those columns to simplify the following analysis. Next, we managed to count the total population and the number of people with bachelor’s degrees or higher in a particular state. We then created a data frame that contains a positive COVID-19 rate, the average income from 2014 to 2017, bachelor’s degree or higher rate, and names of states for further analysis.
+
+```{r, message = FALSE, warning = FALSE}
+# data cleaning
+state = as.character(state_abb$State)
+abb = as.character(state_abb$Code)
+us_income = income[income$State %in% state, ]
+covid = coronavirus[coronavirus$state %in% abb, ]
+edu = education[education$NAME %in% state, ] 
+
+# rename and select columns
+names(state_abb)[names(state_abb) == "Code"] <- "state"
+
+names(covid)[names(covid) == "totalTestResults"] <- "SumTest"
+covid <- covid %>% select(state, positive, SumTest)
+
+names(edu)[names(edu) == "NAME"] <- "State"
+names(edu)[names(edu) == "Estimate..Total..AGE.BY.EDUCATIONAL.ATTAINMENT..Population.18.to.24.years"] <- "total_edu"
+names(edu)[names(edu) == "Estimate..Total..AGE.BY.EDUCATIONAL.ATTAINMENT..Population.18.to.24.years..Bachelor.s.degree.or.higher"] <- "bchlor"
+edu <- edu %>% select(State, total_edu, bchlor)
+
+us_income = us_income[1:5]
+
+# join
+covid <- left_join(covid, state_abb, by = "state")
+df <- left_join(edu, covid, by = "State") %>% 
+  left_join(., us_income) %>% 
+  subset(., select = -c(state, Abbrev)) %>%
+  mutate(posi_percent = positive / SumTest) %>%
+  mutate(avg_income = (X2014 + X2015 + X2016 + X2017) / 4) %>%
+  mutate(bachlor_rate = bchlor / total_edu)
+```
+
+### 2.3 Scatter Plots
+
+We were able to draw graphs based on the data frame created above. The first one represents a scatterplot of bachelor’s or higher degree rate and positive COVID-19 cases percentage, and the second one shows the average income and positive COVID-19 cases percentage. We may observe from the scatter plot that there are decreasing trends of COVID-19 cases percentage as either high education rate or average income increases. However, we need further proof.
+
+```{r}
+# scatterplot
+
+cor_edu_covid <- ggplot(df, aes(bachlor_rate, posi_percent)) + 
+  geom_point(aes(colour = bachlor_rate)) + 
+  geom_rug() + 
+  ggtitle("Correlation of COVID-19 cases and Bachelor's Degree Education") +
+  labs(x="Bachelor's Degree Rate", y="COVID-19 Cases", color = "Education")
+cor_edu_covid
+
+cor_inc_covid <- ggplot(df, aes(posi_percent, avg_income)) + 
+  geom_point(aes(colour = avg_income)) + 
+  geom_rug() +
+  ggtitle("Correlation of COVID-19 cases and Average Income") +
+  labs(x="Average Income", y="COVID-19 Cases", color = "Average Income")
+cor_inc_covid
+
+```
+
+### 3. Linear Models and Data Analysis
+
+In this Chunk, we create four models as below. Model 1 and Model 4 are very similar, yet Model 1 contains an interaction variable of average income and bachelor’s or higher degree. Model 2 and Model 3 make regression on bachelor’s or higher degrees and average income individually. When we observe the report, we may find Model 1 explains our model the best because of its highest R-squared and the lowest AIC. However, Model 1 has several problems as well; for example, its BIC is the largest, and the slopes of variables are not statistically significant at a traditional 0.05 level. Alternatively, we can make conclusions based on Model 2 and Model 3 because both models have statistically significant slopes and relatively low BIC. In Model 2, the estimated slope of bachelor’s or higher rate is -0.698, with a p-value of 0.00332, indicating a statistically significant strong negative correlation with the positive COVID-19 case rate.
+
+Similarly, Model 3 indicates that the average income has, although extremely weak (-2.355*(10^-6)), a statistically significant (p-value 0.0044) negative correlation with the positive COVID-19 case rate. We also made a similar statement from observation of the scatterplots that are generated above. The three models yield consistent results as we made in the hypothesis.
+
+The graph of Model 1 is shown below; we may find an overall downward trend with fluctuations.
+
+```{r}
+Model1 <-lm(posi_percent ~ avg_income + bachlor_rate + avg_income * bachlor_rate, data=df)
+Sum_Model1 <- summary(Model1)
+Sum_Model1
+tidy(Model1)
+glance(Model1)
+
+Model2 <-lm(posi_percent ~ bachlor_rate, data=df)
+Sum_Model2 <- summary(Model2)
+Sum_Model2
+tidy(Model2)
+glance(Model2)
+
+Model3 <-lm(posi_percent ~ avg_income, data=df)
+Sum_Model3 <- summary(Model3)
+Sum_Model3
+tidy(Model3)
+glance(Model3)
+
+Model4 <-lm(posi_percent ~ avg_income + bachlor_rate, data=df)
+Sum_Model4 <- summary(Model4)
+Sum_Model4
+tidy(Model4)
+glance(Model4)
+```
+
+### 4. Data Prediction and Model Testing
+
+```{r}
+dfM1 <- df %>% add_predictions(Model1) %>% add_residuals(Model1)
+
+dfM1 %>% ggplot(aes(avg_income,pred))+geom_line(col="Purple") + 
+  labs(x="Average Income", y="COVID-19 Case") +
+  ggtitle("COVID-19 Prediction based on Average Income under Model 1")
+
+dfM1 %>% ggplot(aes(bachlor_rate,pred))+geom_line(col="Purple") +
+  labs(x="Bachelor's Degree Rate", y="COVID-19 Case") +
+  ggtitle("COVID-19 Prediction based on Bachelor's Degree Education under Model 1")
+
+```
+
+
+### 5. Conclusion
+
+Conclusion
+Our project analyzed the relationship between average income during 2014-2017, the high education rate (bachelor’s degree or higher), and the positive COVID-19 cases rate in 51 states, including D.C., in the United States. We hypothesized that household income and higher education (bachelor's degree or higher) rates in each state are negatively correlated with the positive COVID-19 case rate.
+
+Throughout our analysis, we collected data, cleaned the data, and created four models. We found three of them reasonable and interpreted them to find the results. Our research finally yields consistent results as we hypothesized beforehand. We may conclude that the average income and high education rate are negatively correlated with the positive COVID-19 case rate in certain states. To be more specific, the higher the average income or the higher the residents' education level in a state, the lower the positive COVID-19 case rate.
+
+However, our study has limitations. For instance, the average income rate might not be representative of people’s wealth in a state because a small proportion of high-income people may pull up the average income, even if most people in this state are not wealthy.  Thus, the median income would be a better alternative. On the other hand, there might be more scientific algorithms to calculate the positive COVID-19 rate. In future studies, we may try to overcome such difficulties and obtain more convincing results with fewer biases.
+
