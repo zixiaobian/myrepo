@@ -1,0 +1,4 @@
+“Household_median_income_2017.csv” measures the median amount of income for households in each state and D.C. of the US. 
+“State-Historical COVID-19.csv” collects the cumulative positive cases of COVID-19 from the first detected to March 7th, 2021. 
+“Education-level by states 2019.csv” indicates the number of people who obtain a certain educational level by the state in 2019. 
+Finally, “state-code.csv” contains all 51 states (including D.C.), the abbreviations, and the corresponding codes.
